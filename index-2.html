@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLT Labs — Ogni passione merita la sua app</title>
+  <meta name="description" content="LLT Labs crea app semplici e curate per le passioni italiane. Scopri TartufaiLog e Patentino Tartufi Lazio." />
+  <meta name="author" content="LLT Labs" />
+  <link rel="canonical" href="https://lltlabs.it" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="LLT Labs" />
+  <meta property="og:description" content="Ogni passione merita la sua app." />
+  <meta property="og:url" content="https://lltlabs.it" />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:        #C9A84C;
+      --gold-light:  #E8D08A;
+      --gold-dark:   #8B6914;
+      --ink:         #0E0E0E;
+      --ink-soft:    #3A3A3A;
+      --mist:        #F7F6F2;
+      --white:       #FFFFFF;
+      --border:      rgba(201,168,76,0.18);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--ink);
+      color: var(--white);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px 80px;
+      position: relative;
+      text-align: center;
+    }
+
+    /* sottile raggiatura dorata di sfondo */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(201,168,76,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-logo {
+      width: 110px;
+      height: 110px;
+      object-fit: contain;
+      margin-bottom: 32px;
+      filter: drop-shadow(0 0 24px rgba(201,168,76,0.25));
+    }
+
+    .hero-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: clamp(42px, 8vw, 80px);
+      letter-spacing: 0.18em;
+      color: var(--white);
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .hero-name span {
+      color: var(--gold);
+    }
+
+    .hero-tagline {
+      font-size: clamp(13px, 2vw, 15px);
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 64px;
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,0.25);
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .scroll-hint::after {
+      content: '';
+      display: block;
+      width: 1px;
+      height: 36px;
+      background: linear-gradient(to bottom, rgba(201,168,76,0.5), transparent);
+      animation: scrollline 2s ease-in-out infinite;
+    }
+
+    @keyframes scrollline {
+      0%, 100% { opacity: 0.3; transform: scaleY(1); }
+      50% { opacity: 1; transform: scaleY(0.7); }
+    }
+
+    /* ── APPS SECTION ── */
+    .apps {
+      background: var(--mist);
+      color: var(--ink);
+      padding: 100px 24px;
+    }
+
+    .apps-inner {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .section-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold-dark);
+      margin-bottom: 48px;
+      text-align: center;
+    }
+
+    .app-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 40px;
+      background: var(--white);
+      box-shadow: 0 2px 24px rgba(0,0,0,0.06);
+      transition: box-shadow 0.2s;
+    }
+
+    .app-card:hover {
+      box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+    }
+
+    .app-visual {
+      background: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 56px 40px;
+      position: relative;
+      overflow: hidden;
+      min-height: 280px;
+    }
+
+    .app-visual::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(201,168,76,0.1) 0%, transparent 70%);
+    }
+
+    .app-emoji {
+      font-size: 72px;
+      position: relative;
+      z-index: 1;
+      filter: drop-shadow(0 4px 16px rgba(0,0,0,0.4));
+    }
+
+    .app-body {
+      padding: 48px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .app-label {
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--gold-dark);
+      margin-bottom: 10px;
+    }
+
+    .app-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(26px, 4vw, 36px);
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+
+    .app-desc {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--ink-soft);
+      margin-bottom: 28px;
+    }
+
+    .app-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--ink);
+      color: var(--white);
+      text-decoration: none;
+      padding: 11px 22px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-primary:hover {
+      background: #1e1e1e;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: transparent;
+      color: var(--ink);
+      text-decoration: none;
+      padding: 11px 22px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid rgba(0,0,0,0.15);
+      transition: border-color 0.15s, transform 0.1s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--gold);
+      transform: translateY(-1px);
+    }
+
+    .badge-soon {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--gold-dark);
+      background: rgba(201,168,76,0.1);
+      border: 1px solid rgba(201,168,76,0.25);
+      padding: 8px 16px;
+      border-radius: 8px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--ink);
+      padding: 48px 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-logo {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      opacity: 0.6;
+      margin-bottom: 16px;
+    }
+
+    .footer-text {
+      font-size: 12px;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 0.08em;
+    }
+
+    .footer-text a {
+      color: rgba(255,255,255,0.4);
+      text-decoration: none;
+    }
+
+    .footer-text a:hover { color: var(--gold); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 680px) {
+      .app-card {
+        grid-template-columns: 1fr;
+      }
+
+      .app-visual {
+        min-height: 180px;
+        padding: 40px;
+      }
+
+      .app-emoji { font-size: 56px; }
+
+      .app-body { padding: 32px 24px; }
+    }
+
+    /* ── REDUCED MOTION ── */
+    @media (prefers-reduced-motion: reduce) {
+      .scroll-hint::after { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <section class="hero">
+    <img src="./lemma.png" alt="LLT Labs logo" class="hero-logo" />
+    <h1 class="hero-name">LLT <span>Labs</span></h1>
+    <p class="hero-tagline">Ogni passione merita la sua app</p>
+    <div class="scroll-hint">Scopri</div>
+  </section>
+
+  <!-- APPS -->
+  <section class="apps">
+    <div class="apps-inner">
+      <p class="section-eyebrow">Le nostre app</p>
+
+      <!-- TartufaiLog -->
+      <div class="app-card">
+        <div class="app-visual">
+          <span class="app-emoji">🌲</span>
+        </div>
+        <div class="app-body">
+          <div class="app-label">Mappa · Ritrovamenti · Premium</div>
+          <h2 class="app-name">TartufaiLog</h2>
+          <p class="app-desc">Registra i tuoi ritrovamenti di tartufi su mappa, anche offline. Tieni traccia delle uscite, delle specie e dei quantitativi raccolti. Con la versione Premium sblocchi il GPS automatico, i pin illimitati e l'export GPX.</p>
+          <div class="app-links">
+            <a href="https://tartufailog.lltlabs.it" class="btn-primary" target="_blank">
+              🌐 Apri l'app
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patentino Tartufi -->
+      <div class="app-card">
+        <div class="app-visual">
+          <span class="app-emoji">📋</span>
+        </div>
+        <div class="app-body">
+          <div class="app-label">Quiz · Certificazione · Lazio</div>
+          <h2 class="app-name">Patentino Tartufi Lazio</h2>
+          <p class="app-desc">Preparati all'esame per il patentino di raccolta tartufi in Lazio. 275 domande ufficiali, simulazioni d'esame, statistiche di apprendimento. Studia quando vuoi, anche senza connessione.</p>
+          <div class="app-links">
+            <a href="https://patentino-tartufi-lazio.vercel.app" class="btn-secondary" target="_blank">
+              🌐 Versione web
+            </a>
+            <span class="badge-soon">⏳ Play Store — in arrivo</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <img src="./lemma.png" alt="LLT Labs" class="footer-logo" />
+    <p class="footer-text">
+      © 2026 LLT Labs · <a href="mailto:info@lltlabs.it">info@lltlabs.it</a>
+    </p>
+  </footer>
+
+</body>
+</html>
