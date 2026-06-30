@@ -149,6 +149,21 @@
     align-items: center;
     margin-bottom: 12px;
   }
+  .file-chip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 6px 10px;
+    background: var(--surface-1);
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+  .file-chip button {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
 </style>
 </head>
 <body>
@@ -157,15 +172,19 @@
   <p class="subtitle">Importa il CSV dell'exchange, calcola il costo medio ponderato e stima l'imposta al 26% sulla quota tassabile.</p>
 
   <div class="card" id="upload-section">
-    <p class="card-title">Carica CSV transazioni</p>
-    <input type="file" id="csvfile" accept=".csv" />
-    <p class="note">Riconosce automaticamente le righe di tipo Trade/Sell con BTC come valuta di origine o destinazione (formato Crypto.com export).</p>
+    <div class="header-row">
+      <p class="card-title" style="margin:0">Carica CSV transazioni</p>
+      <button id="clear-all-btn" class="hidden">Svuota tutto</button>
+    </div>
+    <input type="file" id="csvfile" accept=".csv" multiple />
+    <p class="note">Puoi caricare piu file (es. export di anni diversi o exchange diversi): le righe si accumulano in uno storico unico. Riconosce automaticamente le righe di tipo Trade/Sell con BTC come valuta di origine o destinazione (formato Crypto.com export).</p>
+    <div id="file-list" style="margin-top:12px"></div>
   </div>
 
   <div class="card hidden" id="manual-section">
     <div class="header-row">
       <p class="card-title" style="margin:0">Operazioni BTC rilevate</p>
-      <button id="reset-btn">Ricarica CSV</button>
+      <button id="add-more-btn">Aggiungi altro CSV</button>
     </div>
     <div class="tx-list" id="tx-list"></div>
   </div>
@@ -189,6 +208,7 @@
 <script>
 let acquisti = [];
 let venditeRows = [];
+let loadedFiles = [];
 
 function num(s) {
   if (s === undefined || s === null || s === '') return 0;
@@ -200,29 +220,73 @@ function fmtEur(n) {
 }
 
 document.getElementById('csvfile').addEventListener('change', function (e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function (ev) {
-    parseCsv(ev.target.result);
-  };
-  reader.readAsText(file);
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  let pending = files.length;
+  files.forEach(function (file) {
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+      parseCsv(ev.target.result, file.name);
+      pending--;
+      if (pending === 0) {
+        document.getElementById('csvfile').value = '';
+      }
+    };
+    reader.readAsText(file);
+  });
 });
 
-document.getElementById('reset-btn').addEventListener('click', function () {
-  document.getElementById('upload-section').classList.remove('hidden');
+document.getElementById('add-more-btn').addEventListener('click', function () {
+  document.getElementById('csvfile').click();
+});
+
+document.getElementById('clear-all-btn').addEventListener('click', function () {
+  acquisti = [];
+  venditeRows = [];
+  loadedFiles = [];
+  renderFileList();
   document.getElementById('manual-section').classList.add('hidden');
   document.getElementById('summary-card').classList.add('hidden');
   document.getElementById('result-section').classList.add('hidden');
-  document.getElementById('csvfile').value = '';
-  acquisti = [];
-  venditeRows = [];
+  document.getElementById('clear-all-btn').classList.add('hidden');
 });
 
-function parseCsv(text) {
+function removeFile(name) {
+  loadedFiles = loadedFiles.filter(f => f !== name);
+  acquisti = acquisti.filter(a => a.source !== name);
+  venditeRows = venditeRows.filter(v => v.source !== name);
+  renderFileList();
+  if (loadedFiles.length === 0) {
+    document.getElementById('manual-section').classList.add('hidden');
+    document.getElementById('summary-card').classList.add('hidden');
+    document.getElementById('result-section').classList.add('hidden');
+    document.getElementById('clear-all-btn').classList.add('hidden');
+  } else {
+    renderTx();
+  }
+}
+
+function renderFileList() {
+  const box = document.getElementById('file-list');
+  box.innerHTML = '';
+  loadedFiles.forEach(function (name) {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = '<span>' + name + '</span>';
+    const btn = document.createElement('button');
+    btn.textContent = 'Rimuovi';
+    btn.addEventListener('click', function () { removeFile(name); });
+    chip.appendChild(btn);
+    box.appendChild(chip);
+  });
+  document.getElementById('clear-all-btn').classList.toggle('hidden', loadedFiles.length === 0);
+}
+
+function parseCsv(text, fileName) {
+  if (loadedFiles.includes(fileName)) return;
+  loadedFiles.push(fileName);
+
   const lines = text.split('\n').filter(l => l.trim());
-  acquisti = [];
-  venditeRows = [];
   for (const line of lines) {
     const c = line.split(',');
     if (c.length < 12) continue;
@@ -234,41 +298,52 @@ function parseCsv(text) {
     const fromCur = c[6];
     const eurAmount = num(c[11]);
     if (toCur === 'BTC' && (txType === 'Trade' || txType === 'Sell')) {
-      acquisti.push({ date: dateTime, btc: num(toAmount), eur: eurAmount || num(fromAmount) });
+      acquisti.push({ date: dateTime, btc: num(toAmount), eur: eurAmount || num(fromAmount), source: fileName });
     } else if (fromCur === 'BTC' && (txType === 'Trade' || txType === 'Sell')) {
-      venditeRows.push({ date: dateTime, btc: num(fromAmount), eur: eurAmount || num(toAmount), dest: toCur });
+      venditeRows.push({ date: dateTime, btc: num(fromAmount), eur: eurAmount || num(toAmount), dest: toCur, source: fileName });
     }
   }
+
+  acquisti.sort((a, b) => a.date.localeCompare(b.date));
+  venditeRows.sort((a, b) => a.date.localeCompare(b.date));
+
+  renderFileList();
   renderTx();
 }
 
 function renderTx() {
-  document.getElementById('upload-section').classList.add('hidden');
   document.getElementById('manual-section').classList.remove('hidden');
   document.getElementById('summary-card').classList.remove('hidden');
   document.getElementById('result-section').classList.remove('hidden');
 
   const list = document.getElementById('tx-list');
+  const prevSelections = {};
+  document.querySelectorAll('#tx-list select').forEach(function (sel) {
+    prevSelections[sel.dataset.key] = sel.value;
+  });
   list.innerHTML = '';
 
   if (acquisti.length === 0 && venditeRows.length === 0) {
-    list.innerHTML = '<p class="note">Nessuna operazione BTC trovata nel CSV. Verifica il formato del file.</p>';
+    list.innerHTML = '<p class="note">Nessuna operazione BTC trovata nei CSV caricati. Verifica il formato dei file.</p>';
   }
 
   acquisti.forEach(function (a) {
     const row = document.createElement('div');
     row.className = 'tx-row tx-buy';
-    row.innerHTML = '<span>Acquisto - ' + a.date + '</span><span>' + a.btc.toFixed(8) + ' BTC - ' + a.eur.toFixed(2) + ' EUR</span>';
+    row.innerHTML = '<span>Acquisto - ' + a.date + ' (' + a.source + ')</span><span>' + a.btc.toFixed(8) + ' BTC - ' + a.eur.toFixed(2) + ' EUR</span>';
     list.appendChild(row);
   });
 
   venditeRows.forEach(function (v, i) {
+    const key = v.source + '_' + v.date + '_' + i;
     const row = document.createElement('div');
     row.className = 'tx-row tx-sell';
-    row.innerHTML = '<span>Vendita - ' + v.date + '</span><span>' + v.btc.toFixed(8) + ' BTC verso ' + v.dest + '</span>';
+    row.innerHTML = '<span>Vendita - ' + v.date + ' (' + v.source + ')</span><span>' + v.btc.toFixed(8) + ' BTC verso ' + v.dest + '</span>';
     const sel = document.createElement('select');
     sel.innerHTML = '<option value="omog">Permuta omogenea (non tassabile)</option><option value="tax">Evento tassabile</option>';
+    sel.dataset.key = key;
     sel.dataset.idx = i;
+    if (prevSelections[key]) sel.value = prevSelections[key];
     sel.addEventListener('change', calc);
     row.appendChild(sel);
     list.appendChild(row);
@@ -292,8 +367,10 @@ function calc() {
   document.querySelectorAll('#tx-list select').forEach(function (sel) {
     if (sel.value === 'tax') {
       const v = venditeRows[parseInt(sel.dataset.idx)];
-      btcVendutiTassabili += v.btc;
-      eurVendutiTassabili += v.eur;
+      if (v) {
+        btcVendutiTassabili += v.btc;
+        eurVendutiTassabili += v.eur;
+      }
     }
   });
 
