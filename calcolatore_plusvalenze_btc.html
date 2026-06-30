@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calcolatore plusvalenze BTC</title>
+<style>
+  :root {
+    --bg: #faf9f7;
+    --surface: #ffffff;
+    --surface-1: #f4f3f0;
+    --border: #e2e0db;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6a64;
+    --text-muted: #9b9a92;
+    --accent-bg: #e6f1fb;
+    --accent-text: #0c447c;
+    --success-bg: #eaf3de;
+    --success-text: #27500a;
+    --danger-bg: #fcebeb;
+    --danger-text: #791f1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 2rem 1rem;
+    line-height: 1.6;
+  }
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 500;
+    margin: 0 0 4px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 24px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 12px;
+  }
+  input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--surface-1);
+  }
+  input[type="number"], input[type="text"] {
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 10px;
+    font-size: 14px;
+    width: 160px;
+  }
+  select {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  button {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    font-size: 13px;
+  }
+  button:hover { background: var(--surface-1); }
+  .tx-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+  .tx-buy { background: var(--success-bg); color: var(--success-text); }
+  .tx-sell { background: var(--danger-bg); color: var(--danger-text); }
+  .tx-list { max-height: 320px; overflow-y: auto; }
+  .summary-grid, .result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .stat {
+    background: var(--surface-1);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .stat.accent { background: var(--accent-bg); }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0 0 6px;
+  }
+  .stat.accent .stat-label { color: var(--accent-text); }
+  .stat-value {
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0;
+  }
+  .stat.accent .stat-value { color: var(--accent-text); }
+  .stat-value.success { color: var(--success-text); }
+  .stat-value.danger { color: var(--danger-text); }
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .label-inline {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .hidden { display: none; }
+  .note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 16px;
+  }
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Calcolatore plusvalenze BTC</h1>
+  <p class="subtitle">Importa il CSV dell'exchange, calcola il costo medio ponderato e stima l'imposta al 26% sulla quota tassabile.</p>
+
+  <div class="card" id="upload-section">
+    <p class="card-title">Carica CSV transazioni</p>
+    <input type="file" id="csvfile" accept=".csv" />
+    <p class="note">Riconosce automaticamente le righe di tipo Trade/Sell con BTC come valuta di origine o destinazione (formato Crypto.com export).</p>
+  </div>
+
+  <div class="card hidden" id="manual-section">
+    <div class="header-row">
+      <p class="card-title" style="margin:0">Operazioni BTC rilevate</p>
+      <button id="reset-btn">Ricarica CSV</button>
+    </div>
+    <div class="tx-list" id="tx-list"></div>
+  </div>
+
+  <div class="card hidden" id="summary-card">
+    <p class="card-title">Riepilogo acquisti</p>
+    <div class="summary-grid" id="summary"></div>
+  </div>
+
+  <div class="card hidden" id="result-section">
+    <p class="card-title">Calcolo imposta</p>
+    <div class="input-row">
+      <label class="label-inline" for="incasso-input">Incasso EUR effettivo da tassare</label>
+      <input type="number" id="incasso-input" placeholder="es. 16812" />
+    </div>
+    <div class="result-grid" id="result-cards"></div>
+    <p class="note">Stima a fini orientativi. Verifica sempre con un commercialista esperto in fiscalita crypto prima della dichiarazione.</p>
+  </div>
+</div>
+
+<script>
+let acquisti = [];
+let venditeRows = [];
+
+function num(s) {
+  if (s === undefined || s === null || s === '') return 0;
+  return parseFloat(s.toString().replace(',', '.')) || 0;
+}
+
+function fmtEur(n) {
+  return n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' EUR';
+}
+
+document.getElementById('csvfile').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (ev) {
+    parseCsv(ev.target.result);
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('reset-btn').addEventListener('click', function () {
+  document.getElementById('upload-section').classList.remove('hidden');
+  document.getElementById('manual-section').classList.add('hidden');
+  document.getElementById('summary-card').classList.add('hidden');
+  document.getElementById('result-section').classList.add('hidden');
+  document.getElementById('csvfile').value = '';
+  acquisti = [];
+  venditeRows = [];
+});
+
+function parseCsv(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  acquisti = [];
+  venditeRows = [];
+  for (const line of lines) {
+    const c = line.split(',');
+    if (c.length < 12) continue;
+    const dateTime = c[1];
+    const txType = c[2];
+    const toAmount = c[9];
+    const toCur = c[10];
+    const fromAmount = c[5];
+    const fromCur = c[6];
+    const eurAmount = num(c[11]);
+    if (toCur === 'BTC' && (txType === 'Trade' || txType === 'Sell')) {
+      acquisti.push({ date: dateTime, btc: num(toAmount), eur: eurAmount || num(fromAmount) });
+    } else if (fromCur === 'BTC' && (txType === 'Trade' || txType === 'Sell')) {
+      venditeRows.push({ date: dateTime, btc: num(fromAmount), eur: eurAmount || num(toAmount), dest: toCur });
+    }
+  }
+  renderTx();
+}
+
+function renderTx() {
+  document.getElementById('upload-section').classList.add('hidden');
+  document.getElementById('manual-section').classList.remove('hidden');
+  document.getElementById('summary-card').classList.remove('hidden');
+  document.getElementById('result-section').classList.remove('hidden');
+
+  const list = document.getElementById('tx-list');
+  list.innerHTML = '';
+
+  if (acquisti.length === 0 && venditeRows.length === 0) {
+    list.innerHTML = '<p class="note">Nessuna operazione BTC trovata nel CSV. Verifica il formato del file.</p>';
+  }
+
+  acquisti.forEach(function (a) {
+    const row = document.createElement('div');
+    row.className = 'tx-row tx-buy';
+    row.innerHTML = '<span>Acquisto - ' + a.date + '</span><span>' + a.btc.toFixed(8) + ' BTC - ' + a.eur.toFixed(2) + ' EUR</span>';
+    list.appendChild(row);
+  });
+
+  venditeRows.forEach(function (v, i) {
+    const row = document.createElement('div');
+    row.className = 'tx-row tx-sell';
+    row.innerHTML = '<span>Vendita - ' + v.date + '</span><span>' + v.btc.toFixed(8) + ' BTC verso ' + v.dest + '</span>';
+    const sel = document.createElement('select');
+    sel.innerHTML = '<option value="omog">Permuta omogenea (non tassabile)</option><option value="tax">Evento tassabile</option>';
+    sel.dataset.idx = i;
+    sel.addEventListener('change', calc);
+    row.appendChild(sel);
+    list.appendChild(row);
+  });
+
+  calc();
+}
+
+function calc() {
+  const totBtc = acquisti.reduce((s, a) => s + a.btc, 0);
+  const totEur = acquisti.reduce((s, a) => s + a.eur, 0);
+  const avg = totBtc > 0 ? totEur / totBtc : 0;
+
+  document.getElementById('summary').innerHTML =
+    '<div class="stat"><p class="stat-label">BTC acquistati</p><p class="stat-value">' + totBtc.toFixed(8) + '</p></div>' +
+    '<div class="stat"><p class="stat-label">Speso totale</p><p class="stat-value">' + fmtEur(totEur) + '</p></div>' +
+    '<div class="stat"><p class="stat-label">Costo medio</p><p class="stat-value">' + avg.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' EUR/BTC</p></div>';
+
+  let btcVendutiTassabili = 0;
+  let eurVendutiTassabili = 0;
+  document.querySelectorAll('#tx-list select').forEach(function (sel) {
+    if (sel.value === 'tax') {
+      const v = venditeRows[parseInt(sel.dataset.idx)];
+      btcVendutiTassabili += v.btc;
+      eurVendutiTassabili += v.eur;
+    }
+  });
+
+  window._avg = avg;
+  window._btcTax = btcVendutiTassabili;
+  window._eurTax = eurVendutiTassabili;
+
+  updateResult();
+}
+
+document.getElementById('incasso-input').addEventListener('input', updateResult);
+
+function updateResult() {
+  const avg = window._avg || 0;
+  const btcTax = window._btcTax || 0;
+  const eurTax = window._eurTax || 0;
+  const incassoInput = num(document.getElementById('incasso-input').value);
+
+  const cards = document.getElementById('result-cards');
+
+  if (btcTax === 0 && incassoInput === 0) {
+    cards.innerHTML = '<div style="grid-column:1/-1"><p class="note">Seleziona almeno una vendita come evento tassabile, oppure inserisci direttamente l\'incasso EUR per stimare la quota proporzionale.</p></div>';
+    return;
+  }
+
+  let btcEquivalenti = 0;
+  if (incassoInput > 0 && eurTax > 0) {
+    btcEquivalenti = btcTax * (incassoInput / eurTax);
+  } else if (incassoInput > 0 && eurTax === 0) {
+    btcEquivalenti = 0;
+  } else {
+    btcEquivalenti = btcTax;
+  }
+
+  const costo = btcEquivalenti * avg;
+  const incassoEffettivo = incassoInput > 0 ? incassoInput : eurTax;
+  const plusvalenza = incassoEffettivo - costo;
+  const imposta = plusvalenza > 0 ? plusvalenza * 0.26 : 0;
+
+  cards.innerHTML =
+    '<div class="stat"><p class="stat-label">BTC equivalenti</p><p class="stat-value">' + btcEquivalenti.toFixed(6) + '</p></div>' +
+    '<div class="stat"><p class="stat-label">Costo di carico</p><p class="stat-value">' + fmtEur(costo) + '</p></div>' +
+    '<div class="stat"><p class="stat-label">' + (plusvalenza >= 0 ? 'Plusvalenza' : 'Minusvalenza') + '</p><p class="stat-value ' + (plusvalenza >= 0 ? 'success' : 'danger') + '">' + fmtEur(Math.abs(plusvalenza)) + '</p></div>' +
+    '<div class="stat accent"><p class="stat-label">Imposta 26%</p><p class="stat-value">' + fmtEur(imposta) + '</p></div>';
+}
+</script>
+</body>
+</html>
